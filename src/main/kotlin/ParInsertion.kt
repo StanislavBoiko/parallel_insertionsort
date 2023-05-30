@@ -5,29 +5,31 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
-fun parallelizedInsertionSortWithCoroutines(arr: IntArray, numThreads: Int) = runBlocking {
-    val subArrays = Array(numThreads) { i ->
+fun <T> parallelizedInsertionSortWithCoroutines(arr: MutableList<T>, numThreads: Int, comparator: Comparator<T>) = runBlocking {
+    val subArrays = List(numThreads) { i ->
         val start = i * (arr.size / numThreads)
         val end = if (i == numThreads - 1) arr.size else (i + 1) * (arr.size / numThreads)
-        arr.slice(start until end).toIntArray()
+        arr.slice(start until end).toMutableList()
     }
 
     val sortedSubArrays = subArrays.map { subArray ->
         async(Dispatchers.Default) {
-            sequentialInsertionSort(subArray)
+            sequentialInsertionSort(subArray, comparator)
             subArray
         }
     }.awaitAll()
 
-    val mergedArray = mergeSortedArrays(sortedSubArrays.toTypedArray())
-    System.arraycopy(mergedArray, 0, arr, 0, arr.size)
+    val mergedArray = mergeSortedArrays(sortedSubArrays, comparator)
+    arr.clear()
+    arr.addAll(mergedArray)
 }
 
-fun parallelizedInsertionSortWithThreads(arr: IntArray, numThreads: Int) {
-    val subArrays = Array(numThreads) { i ->
+
+fun <T> parallelizedInsertionSortWithThreads(arr: MutableList<T>, numThreads: Int, comparator: Comparator<T>) {
+    val subArrays = List(numThreads) { i ->
         val start = i * (arr.size / numThreads)
         val end = if (i == numThreads - 1) arr.size else (i + 1) * (arr.size / numThreads)
-        arr.slice(start until end).toIntArray()
+        arr.slice(start until end).toMutableList()
     }
 
     val latch = CountDownLatch(numThreads)
@@ -35,23 +37,54 @@ fun parallelizedInsertionSortWithThreads(arr: IntArray, numThreads: Int) {
     for (i in 0 until numThreads) {
         val subArray = subArrays[i]
         thread {
-            sequentialInsertionSort(subArray)
-            subArrays[i] = subArray
+            sequentialInsertionSort(subArray, comparator)
+            synchronized(arr) {
+                subArrays[i].indices.forEach { index ->
+                    arr[i * (arr.size / numThreads) + index] = subArray[index]
+                }
+            }
             latch.countDown()
         }
     }
 
     latch.await()
-    val mergedArray = mergeSortedArrays(subArrays)
-    System.arraycopy(mergedArray, 0, arr, 0, arr.size)
+    val mergedArray = mergeSortedArrays(subArrays, comparator)
+    arr.clear()
+    arr.addAll(mergedArray)
 }
 
-fun mergeSortedArrays(arrays: Array<IntArray>): IntArray {
-    var merged = arrays[0]
-    for (i in 1 until arrays.size) {
-        merged = mergeTwoSortedArrays(merged, arrays[i])
+
+fun <T> mergeSortedArrays(arrays: List<List<T>>, comparator: Comparator<T>): List<T> {
+    val mergedArray = ArrayList<T>(arrays.sumBy { it.size })
+    val indices = IntArray(arrays.size)
+
+    var mergedIndex = 0
+    while (mergedIndex < mergedArray.size) {
+        var minValue = arrays.firstOrNull { it.isNotEmpty() }?.get(indices[0])
+
+        var minIndex = -1
+
+        for (i in arrays.indices) {
+            val array = arrays[i]
+            val index = indices[i]
+
+            if (index < array.size) {
+                val value = array[index]
+                if (minValue == null || comparator.compare(value, minValue) < 0) {
+                    minValue = value
+                    minIndex = i
+                }
+            }
+        }
+
+        if (minIndex != -1) {
+            mergedArray.add(minValue!!)
+            indices[minIndex]++
+            mergedIndex++
+        }
     }
-    return merged
+
+    return mergedArray
 }
 
 fun mergeTwoSortedArrays(arr1: IntArray, arr2: IntArray): IntArray {

@@ -9,27 +9,29 @@ fun test(numThreads: Int, arrSize: Int){
         println("$arrSize elements")
         println("threads used $numThreads")
 
-        val arr = IntArray(arrSize) { (Math.random() * arrSize).toInt() }
-        val arrCopy1 = arr.copyOf()
-        val arrCopy2 = arr.copyOf()
+        val array = Array(arrSize) { (Math.random() * arrSize).toInt() }
+
+//        val list = array.toMutableList()
+        val listCopy1 = array.toMutableList()
+        val listCopy2 = array.toMutableList()
 
 //        val startTimeSequential = System.nanoTime()
-//        sequentialInsertionSort(arr)
+//        sequentialInsertionSort(list, Comparator.naturalOrder<Int>());
 //        val endTimeSequential = System.nanoTime()
 
-//        println("Array sorted (sequential): ${isSorted(arr)}");
+//        println("Array sorted (sequential): ${isSorted(list)}");
 
         val startTimeParallelCoroutines = System.nanoTime()
-        parallelizedInsertionSortWithCoroutines(arrCopy1, numThreads)
+        parallelizedInsertionSortWithCoroutines(listCopy1, numThreads, Comparator.naturalOrder<Int>())
         val endTimeParallelCoroutines = System.nanoTime()
 
-        println("Array sorted (parallel/coroutines): ${isSorted(arrCopy1)}");
+        println("Array sorted (parallel/coroutines): ${isSorted(listCopy1)}");
 
         val startTimeParallelThreads = System.nanoTime()
-        parallelizedInsertionSortWithThreads(arrCopy2, numThreads)
+        parallelizedInsertionSortWithThreads(listCopy2, numThreads, Comparator.naturalOrder<Int>())
         val endTimeParallelThreads = System.nanoTime()
 
-        println("Array sorted (parallel/threads): ${isSorted(arrCopy2)}");
+        println("Array sorted (parallel/threads): ${isSorted(listCopy2)}");
 
 //        val timeSequential = endTimeSequential - startTimeSequential;
         val timeParallelCoroutines = endTimeParallelCoroutines - startTimeParallelCoroutines;
@@ -57,50 +59,56 @@ fun test(numThreads: Int, arrSize: Int){
 fun main() {
 
     test(2, 10_000)
-    test(2, 25_000)
-    test(2, 50_000)
-    test(2, 100_000)
-    test(2, 500_000)
-    test(2, 1_000_000)
-
     test(4, 10_000)
-    test(4, 25_000)
-    test(4, 50_000)
-    test(4, 100_000)
-    test(4, 500_000)
-    test(4, 1_000_000)
-
     test(6, 10_000)
-    test(6, 25_000)
-    test(6, 50_000)
-    test(6, 100_000)
-    test(6, 500_000)
-    test(6, 1_000_000)
-
     test(8, 10_000)
-    test(8, 25_000)
-    test(8, 50_000)
-    test(8, 100_000)
-    test(8, 500_000)
-    test(8, 1_000_000)
-
     test(10, 10_000)
-    test(10, 25_000)
-    test(10, 50_000)
-    test(10, 100_000)
-    test(10, 500_000)
-    test(10, 1_000_000)
-
     test(12, 10_000)
+
+
+    test(2, 25_000)
+    test(4, 25_000)
+    test(6, 25_000)
+    test(8, 25_000)
+    test(10, 25_000)
     test(12, 25_000)
+
+
+    test(2, 50_000)
+    test(4, 50_000)
+    test(6, 50_000)
+    test(8, 50_000)
+    test(10, 50_000)
     test(12, 50_000)
+
+    test(2, 100_000)
+    test(4, 100_000)
+    test(6, 100_000)
+    test(8, 100_000)
+    test(10, 100_000)
     test(12, 100_000)
+
+
+
+
+    test(2, 500_000)
+    test(4, 500_000)
+    test(6, 500_000)
+    test(8, 500_000)
+    test(10, 500_000)
     test(12, 500_000)
+
+
+    test(2, 1_000_000)
+    test(4, 1_000_000)
+    test(6, 1_000_000)
+    test(8, 1_000_000)
+    test(10, 1_000_000)
     test(12, 1_000_000)
 
 }
 
-fun isSorted(a: IntArray): Boolean {
+fun isSorted(a: List<Int>): Boolean {
     for (i in 0 until a.size - 1)
     {
         if (a[i] > a[i + 1]) {
